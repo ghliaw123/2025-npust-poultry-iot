@@ -1,0 +1,318 @@
+[
+    {
+        "id": "lab3Tab",
+        "type": "tab",
+        "label": "Lab3—控制與備援",
+        "disabled": false,
+        "info": "Lab3：雲端下發指令、手動/自動模式、設備在線狀態"
+    },
+    {
+        "id": "uiDropdownMode",
+        "type": "ui_dropdown",
+        "z": "lab3Tab",
+        "name": "模式",
+        "label": "模式",
+        "place": "選擇模式",
+        "group": "uiGroupControl",
+        "order": 1,
+        "width": 6,
+        "height": 1,
+        "options": [
+            {
+                "label": "auto",
+                "value": "auto",
+                "type": "str"
+            },
+            {
+                "label": "manual",
+                "value": "manual",
+                "type": "str"
+            }
+        ],
+        "payload": "auto",
+        "topic": "mode",
+        "x": 290,
+        "y": 100,
+        "wires": [
+            [
+                "fnBuildCmd"
+            ]
+        ]
+    },
+    {
+        "id": "uiSwitchFan",
+        "type": "ui_switch",
+        "z": "lab3Tab",
+        "name": "風扇開關（手動有效）",
+        "label": "風扇開關（手動有效）",
+        "group": "uiGroupControl",
+        "order": 2,
+        "width": 6,
+        "height": 1,
+        "passthru": true,
+        "decouple": "false",
+        "topic": "on",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "x": 310,
+        "y": 160,
+        "wires": [
+            [
+                "fnBuildCmd"
+            ]
+        ]
+    },
+    {
+        "id": "uiNumThLab3",
+        "type": "ui_numeric",
+        "z": "lab3Tab",
+        "name": "溫度閾值(°C)",
+        "label": "溫度閾值(°C)",
+        "group": "uiGroupControl",
+        "order": 3,
+        "width": 6,
+        "height": 1,
+        "passthru": true,
+        "topic": "thresh_temp_c",
+        "format": "{{value}}",
+        "min": 20,
+        "max": 45,
+        "step": 0.5,
+        "x": 300,
+        "y": 220,
+        "wires": [
+            [
+                "fnBuildCmd"
+            ]
+        ]
+    },
+    {
+        "id": "fnBuildCmd",
+        "type": "function",
+        "z": "lab3Tab",
+        "name": "組合指令 JSON",
+        "func": "let s=flow.get('fan_cmd')||{mode:'auto',on:false,thresh_temp_c:30};\nif(msg.topic==='mode') s.mode=msg.payload;\nif(msg.topic==='on') s.on=!!msg.payload;\nif(msg.topic==='thresh_temp_c') s.thresh_temp_c=Number(msg.payload);\nflow.set('fan_cmd',s);\nmsg.payload=s;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 570,
+        "y": 160,
+        "wires": [
+            [
+                "mqttOutCmd"
+            ]
+        ]
+    },
+    {
+        "id": "mqttOutCmd",
+        "type": "mqtt out",
+        "z": "lab3Tab",
+        "name": "下發風扇指令",
+        "topic": "xxxxxx/cmd/fan",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "f4a76df48325abb5",
+        "x": 840,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "mqttInFanState",
+        "type": "mqtt in",
+        "z": "lab3Tab",
+        "name": "訂閱風扇狀態",
+        "topic": "xxxxxx/state/fan",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "f4a76df48325abb5",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 300,
+        "y": 300,
+        "wires": [
+            [
+                "jsonParseState"
+            ]
+        ]
+    },
+    {
+        "id": "jsonParseState",
+        "type": "json",
+        "z": "lab3Tab",
+        "name": "解析狀態 JSON",
+        "property": "payload",
+        "action": "obj",
+        "pretty": false,
+        "x": 510,
+        "y": 300,
+        "wires": [
+            [
+                "uiTextFanState"
+            ]
+        ]
+    },
+    {
+        "id": "uiTextFanState",
+        "type": "ui_text",
+        "z": "lab3Tab",
+        "group": "uiGroupControl",
+        "order": 5,
+        "width": 12,
+        "height": 1,
+        "name": "風扇狀態顯示",
+        "label": "風扇狀態",
+        "format": "mode={{msg.payload.mode}}; on={{msg.payload.on}}; last_cmd_ts={{msg.payload.last_cmd_ts}}",
+        "layout": "row-spread",
+        "x": 780,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "mqttInOnline",
+        "type": "mqtt in",
+        "z": "lab3Tab",
+        "name": "設備在線 (LWT)",
+        "topic": "xxxxxx/state/online",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "f4a76df48325abb5",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 330,
+        "y": 360,
+        "wires": [
+            [
+                "uiTextOnline",
+                "461495338f912520"
+            ]
+        ]
+    },
+    {
+        "id": "uiTextOnline",
+        "type": "ui_text",
+        "z": "lab3Tab",
+        "group": "uiGroupControl",
+        "order": 6,
+        "width": 12,
+        "height": 1,
+        "name": "在線狀態",
+        "label": "裝置連線狀態",
+        "format": "{{payload}}",
+        "layout": "row-spread",
+        "x": 590,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "0f365ef03fb21371",
+        "type": "inject",
+        "z": "lab3Tab",
+        "name": "預設溫度閾值",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "0",
+        "topic": "",
+        "payload": "30",
+        "payloadType": "num",
+        "x": 120,
+        "y": 220,
+        "wires": [
+            [
+                "uiNumThLab3"
+            ]
+        ]
+    },
+    {
+        "id": "461495338f912520",
+        "type": "debug",
+        "z": "lab3Tab",
+        "name": "debug 5",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 600,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "uiGroupControl",
+        "type": "ui_group",
+        "name": "風扇控制",
+        "tab": "uiTabMain",
+        "order": 4,
+        "disp": true,
+        "width": "12",
+        "collapse": false
+    },
+    {
+        "id": "f4a76df48325abb5",
+        "type": "mqtt-broker",
+        "name": "Emqx Broker",
+        "broker": "broker.emqx.io",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "uiTabMain",
+        "type": "ui_tab",
+        "name": "禽畜雲端管理",
+        "icon": "dashboard",
+        "order": 1
+    },
+    {
+        "id": "e984f4cff5a72727",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-dashboard": "3.6.6"
+        }
+    }
+]

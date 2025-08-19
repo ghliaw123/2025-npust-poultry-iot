@@ -1,0 +1,386 @@
+[
+    {
+        "id": "lab1Tab",
+        "type": "tab",
+        "label": "Lab1—資料上傳",
+        "disabled": false,
+        "info": "Lab1：ESP32->MQTT->Node-RED 即時觀測與趨勢"
+    },
+    {
+        "id": "mqttInSensor",
+        "type": "mqtt in",
+        "z": "lab1Tab",
+        "name": "訂閱感測資料",
+        "topic": "xxxxxx/sensor",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "f4a76df48325abb5",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 80,
+        "wires": [
+            [
+                "jsonParse1",
+                "fe2462d0842dfa35"
+            ]
+        ]
+    },
+    {
+        "id": "jsonParse1",
+        "type": "json",
+        "z": "lab1Tab",
+        "name": "JSON 解析",
+        "property": "payload",
+        "action": "obj",
+        "pretty": false,
+        "x": 350,
+        "y": 80,
+        "wires": [
+            [
+                "fnSplitSeries",
+                "510d623d7cf8d346"
+            ]
+        ]
+    },
+    {
+        "id": "fnSplitSeries",
+        "type": "function",
+        "z": "lab1Tab",
+        "name": "整理資料",
+        "func": "var msgs=[];\nif(typeof msg.payload!=='object')return null;\nconst p=msg.payload;\nconst has=k=>(p[k]!==undefined&&p[k]!==null);\nif(has('temp_c')) msgs.push({payload:p.temp_c,topic:'temp_c'});\nelse msgs.push({ payload: null, topic: 'temp_c' });\nif(has('rh')) msgs.push({payload:p.rh,topic:'rh'});\nelse msgs.push({ payload: null, topic: 'rh' });\nif(has('flow_lpm')) msgs.push({payload:p.flow_lpm,topic:'flow_lpm'});\nelse msgs.push({ payload: null, topic: 'flow_lpm' });\nreturn [msgs[0],msgs[1],msgs[2],msgs];",
+        "outputs": 4,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 540,
+        "y": 80,
+        "wires": [
+            [
+                "uiGaugeTemp"
+            ],
+            [
+                "uiGaugeRh"
+            ],
+            [
+                "uiGaugeFlow"
+            ],
+            [
+                "rbeTemp"
+            ]
+        ]
+    },
+    {
+        "id": "uiGaugeTemp",
+        "type": "ui_gauge",
+        "z": "lab1Tab",
+        "name": "溫度 (°C)",
+        "group": "uiGroupLive",
+        "order": 1,
+        "width": 4,
+        "height": 4,
+        "gtype": "gage",
+        "title": "溫度 (°C)",
+        "label": "°C",
+        "format": "{{value}}",
+        "min": 0,
+        "max": 50,
+        "colors": [
+            "#0000ff",
+            "#00ff00",
+            "#ff0238"
+        ],
+        "seg1": "22",
+        "seg2": "29",
+        "diff": false,
+        "className": "",
+        "x": 800,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "uiGaugeRh",
+        "type": "ui_gauge",
+        "z": "lab1Tab",
+        "name": "濕度 (%)",
+        "group": "uiGroupLive",
+        "order": 2,
+        "width": 4,
+        "height": 4,
+        "gtype": "gage",
+        "title": "濕度 (%)",
+        "label": "%",
+        "format": "{{value}}",
+        "min": 0,
+        "max": 100,
+        "colors": [
+            "#0000ff",
+            "#00ff00",
+            "#ff0000"
+        ],
+        "seg1": "40",
+        "seg2": "80",
+        "diff": false,
+        "className": "",
+        "x": 800,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "uiGaugeFlow",
+        "type": "ui_gauge",
+        "z": "lab1Tab",
+        "name": "飲水流量 (L/min)",
+        "group": "uiGroupLive",
+        "order": 3,
+        "width": 4,
+        "height": 4,
+        "gtype": "gage",
+        "title": "飲水流量 (L/min)",
+        "label": "L/min",
+        "format": "{{value}}",
+        "min": 0,
+        "max": 10,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "x": 820,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "rbeTemp",
+        "type": "rbe",
+        "z": "lab1Tab",
+        "name": "抑制重複",
+        "func": "rbe",
+        "gap": "",
+        "start": "",
+        "inout": "out",
+        "septopics": true,
+        "x": 800,
+        "y": 160,
+        "wires": [
+            [
+                "uiChartTrend",
+                "75d140649e14d8c3"
+            ]
+        ]
+    },
+    {
+        "id": "uiChartTrend",
+        "type": "ui_chart",
+        "z": "lab1Tab",
+        "name": "24h 趨勢",
+        "group": "uiGroupTrend",
+        "order": 1,
+        "width": 12,
+        "height": 6,
+        "label": "24h 趨勢 (temp_c, rh, flow_lpm)",
+        "chartType": "line",
+        "legend": "true",
+        "xformat": "auto",
+        "interpolate": "linear",
+        "nodata": "尚無資料",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "",
+        "removeOlder": "24",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 1000,
+        "y": 160,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "0f48ed4b25482b69",
+        "type": "inject",
+        "z": "lab1Tab",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"temp_c\":30.6,\"rh\":80,\"flow_lpm\":6.5}",
+        "payloadType": "str",
+        "x": 130,
+        "y": 140,
+        "wires": [
+            [
+                "jsonParse1"
+            ]
+        ]
+    },
+    {
+        "id": "75d140649e14d8c3",
+        "type": "debug",
+        "z": "lab1Tab",
+        "name": "debug 1",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 940,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "fe2462d0842dfa35",
+        "type": "debug",
+        "z": "lab1Tab",
+        "name": "debug 3",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 340,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "510d623d7cf8d346",
+        "type": "debug",
+        "z": "lab1Tab",
+        "name": "debug 4",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 520,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "c8a108d8049fd6e4",
+        "type": "ui_spacer",
+        "z": "lab1Tab",
+        "name": "spacer",
+        "group": "uiGroupControl",
+        "order": 4,
+        "width": 6,
+        "height": 1
+    },
+    {
+        "id": "f4a76df48325abb5",
+        "type": "mqtt-broker",
+        "name": "Emqx Broker",
+        "broker": "broker.emqx.io",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "uiGroupLive",
+        "type": "ui_group",
+        "name": "即時觀測",
+        "tab": "uiTabMain",
+        "order": 1,
+        "disp": true,
+        "width": "12",
+        "collapse": false
+    },
+    {
+        "id": "uiGroupTrend",
+        "type": "ui_group",
+        "name": "24h 趨勢",
+        "tab": "uiTabMain",
+        "order": 2,
+        "disp": true,
+        "width": "12",
+        "collapse": false
+    },
+    {
+        "id": "uiGroupControl",
+        "type": "ui_group",
+        "name": "風扇控制",
+        "tab": "uiTabMain",
+        "order": 4,
+        "disp": true,
+        "width": "12",
+        "collapse": false
+    },
+    {
+        "id": "uiTabMain",
+        "type": "ui_tab",
+        "name": "禽畜雲端管理",
+        "icon": "dashboard",
+        "order": 1
+    },
+    {
+        "id": "1e90c6354f194156",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-dashboard": "3.6.6"
+        }
+    }
+]
