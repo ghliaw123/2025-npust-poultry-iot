@@ -223,7 +223,7 @@ bool readSensors(float& tempC, float& rh, float& lpm) {
     float l = (float)pulses / FLOW_PULSES_PER_LITER;
     lpm = l / ((float)intervalMs / 60000.0f);
 #else // My design: using button module to simulate flow counter
-    #define FLOW_PER_PULSE  0.3 // L
+    #define FLOW_PER_PULSE  0.02 // L
     float l = (float)pulses * FLOW_PER_PULSE;
     lpm = l / ((float)intervalMs / 60000.0f);
 #endif
